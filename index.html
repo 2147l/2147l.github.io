@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="CN-zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>title</title>
+</head>
+
+<body>
+    <p id="number">1</p>
+</body>
+
+<script>
+    const dom = document.getElementById("number");
+
+    function getRandomHexColor() {
+        const r = Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+        const g = Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+        const b = Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+        return `#${r}${g}${b}`;
+    }
+
+    let a = 1;
+    let t = setInterval(() => {
+        a += 1;
+        dom.innerHTML = a;
+        dom.style.color = getRandomHexColor();
+        if (a === 10) {
+            clearInterval(t);
+        }
+    }, 1000);
+
+</script>
+
+</html>
