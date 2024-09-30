@@ -25,11 +25,19 @@
         a += 1;
         dom.innerHTML = a;
         dom.style.color = getRandomHexColor();
-        if (a === 10) {
+        dom.style.backgroundColor = getRandomHexColor();
+        if (a === 20) {
             clearInterval(t);
         }
     }, 1000);
 
 </script>
+
+<style>
+    p {
+        text-align: center;
+        font-size: xxx-large;
+    }
+</style>
 
 </html>
