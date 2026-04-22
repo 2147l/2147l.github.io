@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>省份猜猜猜</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='10' y='80' font-size='70'>🌏</text></svg>">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(220.55deg, #C5EDF5 0%, #4A879A 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', system-ui, -apple-system, 'Noto Sans', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* 游戏主卡片 */
+        .game-container {
+            max-width: 650px;
+            width: 100%;
+            background: rgba(255, 248, 225, 0.95);
+            backdrop-filter: blur(2px);
+            border-radius: 68px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+            overflow: hidden;
+            padding: 28px 24px 36px;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 215, 150, 0.6);
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .game-header h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #c96f0e, #b3480c);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0 0 6px 0;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .score-area {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .record-card {
+            background: #498f90;
+            padding: 8px 20px;
+            border-radius: 60px;
+            color: #ffdd99;
+            font-weight: bold;
+            font-size: 1.4rem;
+            box-shadow: inset 0 -1px 0 #7eb9ba, 0 6px 12px rgba(0, 0, 0, 0.2);
+            transition: 0.1s;
+        }
+
+        .score-card {
+            background: #2c2b28;
+            padding: 8px 20px;
+            border-radius: 60px;
+            color: #ffdd99;
+            font-weight: bold;
+            font-size: 1.4rem;
+            box-shadow: inset 0 -1px 0 #5f5b54, 0 6px 12px rgba(0, 0, 0, 0.2);
+            transition: 0.1s;
+        }
+
+
+        .score-card span {
+            color: #f9b43a;
+            font-size: 1.4rem;
+            margin-right: 6px;
+            font-weight: 800;
+        }
+
+        .city-card {
+            background: #fff1e0;
+            border-radius: 68px;
+            padding: 30px 20px;
+            text-align: center;
+            margin-bottom: 35px;
+            box-shadow: inset 0 0 0 2px white, 0 12px 22px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e7c8a0;
+        }
+
+        .city-label {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 600;
+            color: #b96f30;
+            margin-bottom: 12px;
+        }
+
+        .city-name {
+            font-size: 3.4rem;
+            font-weight: 800;
+            color: #2d3e3b;
+            text-shadow: 3px 3px 0 #f0cf9c;
+            letter-spacing: 2px;
+            word-break: keep-all;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0 24px;
+        }
+
+        .province-btn {
+            background: #f5e7d3;
+            border: none;
+            padding: 14px 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 60px;
+            color: #3c2a23;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            box-shadow: 0 6px 0 #a77b4b;
+            font-family: inherit;
+            letter-spacing: 1px;
+        }
+
+        .province-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            background: #ffe2bd;
+            box-shadow: 0 9px 0 #a77b4b;
+        }
+
+        .province-btn:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #a77b4b;
+        }
+
+        .province-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: translateY(0);
+            background: #cfc2b2;
+            box-shadow: 0 4px 0 #82653f;
+        }
+
+        /* 正确高亮样式（绿色） */
+        .province-btn.correct-highlight {
+            background: #2b8c4e !important;
+            color: white !important;
+            box-shadow: 0 4px 0 #165c32 !important;
+            border: none;
+        }
+
+        /* 错误高亮样式（红色） */
+        .province-btn.wrong-highlight {
+            background: #c7362b !important;
+            color: white !important;
+            box-shadow: 0 4px 0 #7e2a1f !important;
+        }
+
+        /* 保证禁用状态下高亮依然可见 */
+        .province-btn.correct-highlight:disabled,
+        .province-btn.wrong-highlight:disabled {
+            opacity: 0.9;
+            background: #2b8c4e !important;
+            color: white !important;
+        }
+
+        .province-btn.wrong-highlight:disabled {
+            background: #c7362b !important;
+        }
+
+        /* 反馈区域：固定高度容器，保证高度不变 */
+        .action-area {
+            min-height: 85px;
+            margin: 15px 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .message-box {
+            background: #f8edd9;
+            border-radius: 48px;
+            padding: 12px 20px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 1rem;
+            color: #886a42;
+            border-left: 8px solid #e4a35a;
+            width: 100%;
+            transition: 0.1s;
+        }
+
+        .next-btn {
+            background: #ffa54d;
+            width: 100%;
+            border: none;
+            padding: 14px 0;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c1d12;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 7px 0 #b45f2b;
+            font-family: inherit;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .next-btn:hover {
+            background: #ffb869;
+            transform: translateY(-2px);
+            box-shadow: 0 9px 0 #b45f2b;
+        }
+
+        .next-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 3px 0 #b45f2b;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            .game-container {
+                padding: 20px 16px 28px;
+            }
+
+            .city-name {
+                font-size: 2.3rem;
+            }
+
+            .province-btn {
+                font-size: 1rem;
+                padding: 12px 6px;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .action-area {
+                min-height: 75px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+        <div class="game-header">
+            <h1>省份猜猜猜</h1>
+        </div>
+
+        <div class="score-area">
+            <div class="record-card">
+                🏆最高纪录 <span id="recordValue">0</span>
+            </div>
+            <div class="score-card">
+                当前连胜 <span id="scoreValue">0</span>
+            </div>
+        </div>
+
+        <div class="city-card" id="cityCard">
+            <div class="city-label">🏙️ 城市</div>
+            <div class="city-name" id="cityName">加载中...</div>
+        </div>
+
+        <div class="options-grid" id="optionsContainer"></div>
+
+        <!-- 固定高度的反馈区域：messageBox 与 nextBtn 共用同一位置，通过切换显示来“替换” -->
+        <div class="action-area">
+            <div class="message-box" id="messageBox">
+                🧭选出城市所属的正确省份
+            </div>
+            <button class="next-btn hidden" id="nextBtn">🎉 下一题 🎉</button>
+        </div>
+
+    </div>
+
+    <script>
+        // ---------- 数据结构 ----------
+        // 省份数组
+        const provinces = [
+            "河北", "山西", "辽宁", "吉林", "黑龙江", "江苏", "浙江", "安徽", "福建", "江西",
+            "山东", "河南", "湖北", "湖南", "广东", "海南", "四川", "贵州", "云南", "陕西",
+            "甘肃", "青海", "台湾", "内蒙古", "广西", "西藏", "宁夏", "新疆", "直辖市"
+        ]
+
+        // 城市数组（按省份顺序）
+        const cities = [
+            "石家庄", "唐山", "秦皇岛", "邯郸", "邢台", "保定", "张家口", "承德", "沧州", "廊坊", "衡水",
+            "太原", "大同", "阳泉", "长治", "晋城", "朔州", "晋中", "运城", "忻州", "临汾", "吕梁",
+            "沈阳", "大连", "鞍山", "抚顺", "本溪", "丹东", "锦州", "营口", "阜新", "辽阳", "盘锦", "铁岭", "朝阳", "葫芦岛",
+            "长春", "吉林", "四平", "辽源", "通化", "白山", "松原", "白城",
+            "哈尔滨", "齐齐哈尔", "鸡西", "鹤岗", "双鸭山", "大庆", "伊春", "佳木斯", "七台河", "牡丹江", "黑河", "绥化",
+            "南京", "无锡", "徐州", "常州", "苏州", "南通", "连云港", "淮安", "盐城", "扬州", "镇江", "泰州", "宿迁",
+            "杭州", "宁波", "温州", "嘉兴", "湖州", "绍兴", "金华", "衢州", "舟山", "台州", "丽水",
+            "合肥", "芜湖", "蚌埠", "淮南", "马鞍山", "淮北", "铜陵", "安庆", "黄山", "滁州", "阜阳", "宿州", "六安", "亳州", "池州", "宣城",
+            "福州", "厦门", "莆田", "三明", "泉州", "漳州", "南平", "龙岩", "宁德",
+            "南昌", "景德镇", "萍乡", "九江", "新余", "鹰潭", "赣州", "吉安", "宜春", "抚州", "上饶",
+            "济南", "青岛", "淄博", "枣庄", "东营", "烟台", "潍坊", "济宁", "泰安", "威海", "日照", "临沂", "德州", "聊城", "滨州", "菏泽",
+            "郑州", "开封", "洛阳", "平顶山", "安阳", "鹤壁", "新乡", "焦作", "濮阳", "许昌", "漯河", "三门峡", "南阳", "商丘", "信阳", "周口", "驻马店",
+            "武汉", "黄石", "十堰", "宜昌", "襄阳", "鄂州", "荆门", "孝感", "荆州", "黄冈", "咸宁", "随州",
+            "长沙", "株洲", "湘潭", "衡阳", "邵阳", "岳阳", "常德", "张家界", "益阳", "郴州", "永州", "怀化", "娄底",
+            "广州", "韶关", "深圳", "珠海", "汕头", "佛山", "江门", "湛江", "茂名", "肇庆", "惠州", "梅州", "汕尾", "河源", "阳江", "清远", "东莞", "中山", "潮州", "揭阳", "云浮",
+            "海口", "三亚", "三沙", "儋州",
+            "成都", "自贡", "攀枝花", "泸州", "德阳", "绵阳", "广元", "遂宁", "内江", "乐山", "南充", "眉山", "宜宾", "广安", "达州", "雅安", "巴中", "资阳",
+            "贵阳", "六盘水", "遵义", "安顺", "毕节", "铜仁",
+            "昆明", "曲靖", "玉溪", "保山", "昭通", "丽江", "普洱", "临沧",
+            "西安", "铜川", "宝鸡", "咸阳", "渭南", "延安", "汉中", "榆林", "安康", "商洛",
+            "兰州", "嘉峪关", "金昌", "白银", "天水", "武威", "张掖", "平凉", "酒泉", "庆阳", "定西", "陇南",
+            "西宁", "海东",
+            "台北", "新北", "桃园", "台中", "台南", "高雄", "基隆", "新竹", "嘉义",
+            "呼和浩特", "包头", "乌海", "赤峰", "通辽", "鄂尔多斯", "呼伦贝尔", "巴彦淖尔", "乌兰察布",
+            "南宁", "柳州", "桂林", "梧州", "北海", "防城港", "钦州", "贵港", "玉林", "百色", "贺州", "河池", "来宾", "崇左",
+            "拉萨", "日喀则", "昌都", "林芝", "山南", "那曲",
+            "银川", "石嘴山", "吴忠", "固原", "中卫",
+            "乌鲁木齐", "克拉玛依", "吐鲁番", "哈密",
+            "北京", "上海", "天津", "重庆"
+        ]
+
+        // 索引数组（每个城市所属省份在provinces中的索引）
+        const indices = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+            3, 3, 3, 3, 3, 3, 3, 3,
+            4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            8, 8, 8, 8, 8, 8, 8, 8, 8,
+            9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+            10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+            12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+            13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+            14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+            15, 15, 15, 15,
+            16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
+            17, 17, 17, 17, 17, 17,
+            18, 18, 18, 18, 18, 18, 18, 18,
+            19, 19, 19, 19, 19, 19, 19, 19, 19, 19,
+            20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
+            21, 21,
+            22, 22, 22, 22, 22, 22, 22, 22, 22,
+            23, 23, 23, 23, 23, 23, 23, 23, 23,
+            24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
+            25, 25, 25, 25, 25, 25,
+            26, 26, 26, 26, 26,
+            27, 27, 27, 27,
+            28, 28, 28, 28
+        ]
+
+        // 数据一致性校验
+        if (cities.length !== indices.length) {
+            console.error("数据错误: cities 和 indices 长度不一致");
+        }
+
+        // ---------- 游戏状态 ----------
+        let currentCityName = "";          // 当前城市名称
+        let currentCorrectProvince = "";   // 当前正确省份
+        let currentCityIndex = -1;         // 当前城市在cities中的索引
+        let hasAnswered = false;            // 本题是否已经作答（锁定后续点击）
+        let isAnswerCorrect = false;        // 本题回答是否正确（用于加分，但加分在点击时决定）
+        let currentRecord = 0;              // 最高连胜纪录
+        let currentScore = 0;              // 当前连胜次数（只加正确次数）
+
+        // DOM 元素
+        const cityNameEl = document.getElementById("cityName");
+        const optionsContainer = document.getElementById("optionsContainer");
+        const messageBoxDiv = document.getElementById("messageBox");
+        const nextBtn = document.getElementById("nextBtn");
+        const recordSpan = document.getElementById("recordValue");
+        const scoreSpan = document.getElementById("scoreValue");
+        const actionArea = document.querySelector(".action-area");
+
+        // ---------- 辅助函数 ----------
+        // 洗牌算法
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // 从省份数组中随机取 count 个不重复的元素 (排除 excludeProvince)
+        function getRandomDistinctProvinces(count, excludeProvince) {
+            let candidates = provinces.filter(p => p !== excludeProvince);
+            if (candidates.length === 0)
+                return [];
+            let actualCount = Math.min(count, candidates.length);
+            const shuffled = shuffleArray([...candidates]);
+            return shuffled.slice(0, actualCount);
+        }
+
+        // 生成选项数组：正确省份 + 3个随机不同错误省份，并随机打乱顺序
+        function generateOptions(correctProvince) {
+            let wrongOptions = getRandomDistinctProvinces(3, correctProvince);
+            let options = [correctProvince, ...wrongOptions];
+            // 极端情况补充
+            if (options.length < 2) {
+                const another = provinces.find(p => p !== correctProvince);
+                if (another)
+                    options.push(another);
+            }
+            return shuffleArray(options);
+        }
+
+        // 随机获取一个城市
+        function getRandomCityInfo() {
+            const randIndex = Math.floor(Math.random() * cities.length);
+            const city = cities[randIndex];
+            const provinceIndex = indices[randIndex];
+            const province = provinces[provinceIndex];
+            return {
+                cityName: city,
+                province: province,
+                cityIdx: randIndex
+            };
+        }
+
+        // 渲染选项按钮（无高亮，全部启用）
+        function renderOptions(optionsArray) {
+            optionsContainer.innerHTML = "";
+            optionsArray.forEach(provinceName => {
+                const btn = document.createElement("button");
+                btn.className = "province-btn";
+                btn.textContent = provinceName;
+                btn.setAttribute("data-province", provinceName);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        // 禁用所有选项按钮
+        function disableAllOptions() {
+            const btns = document.querySelectorAll(".province-btn");
+            btns.forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+
+        // 为正确选项添加绿色高亮，为错误选项（如果答错）添加红色高亮
+        // selectedBtn: 用户点击的按钮（仅在答错时需要给它加红色）
+        // isUserCorrect: 用户回答是否正确
+        function applyResultHighlights(isUserCorrect, selectedBtn) {
+            // 获取所有选项按钮
+            const allBtns = document.querySelectorAll(".province-btn");
+            // 先找出正确选项对应的按钮（根据省份名）
+            let correctBtn = null;
+            allBtns.forEach(btn => {
+                if (btn.getAttribute("data-province") === currentCorrectProvince) {
+                    correctBtn = btn;
+                }
+            });
+
+            // 正确选项永远变绿色
+            if (correctBtn) {
+                correctBtn.classList.add("correct-highlight");
+            }
+
+            // 如果用户回答错误，需要把用户点击的按钮标记为红色（且不是正确选项本身，但安全判断）
+            if (!isUserCorrect && selectedBtn && selectedBtn !== correctBtn) {
+                selectedBtn.classList.add("wrong-highlight");
+            }
+        }
+
+        // 更新分数UI
+        function updateScoreUI() {
+            scoreSpan.innerText = currentScore;
+            recordSpan.innerText = currentRecord;
+        }
+
+        // 处理本题结束：显示下一题按钮，隐藏提示框，并锁定题目
+        function finishQuestion(isCorrect, clickedBtn) {
+            if (hasAnswered)
+                return; // 防止重复结束
+            hasAnswered = true;
+
+            // 根据是否正确增加分数
+            if (isCorrect) {
+                currentScore++;
+                if (currentScore > currentRecord)
+                    currentRecord = currentScore;
+            }
+            else
+                currentScore = 0;
+            updateScoreUI();
+
+            // 应用高亮样式（正确选项绿色，错误选项红色）
+            applyResultHighlights(isCorrect, clickedBtn);
+
+            // 禁用所有选项，防止二次点击
+            disableAllOptions();
+
+            // 用nextBtn替换messageBox（隐藏messageBox，显示nextBtn）
+            messageBoxDiv.classList.add("hidden");
+            nextBtn.classList.remove("hidden");
+        }
+
+        // 处理选项点击 (每道题只有一次机会)
+        function onOptionClick(e) {
+            const btn = e.target.closest(".province-btn");
+            if (!btn) return;
+            // 已经作答过，不能再选
+            if (hasAnswered) return;
+
+            const selectedProvince = btn.getAttribute("data-province");
+            const isCorrect = (selectedProvince === currentCorrectProvince);
+
+            finishQuestion(isCorrect, btn);
+        }
+
+        // 加载新题目（重置所有状态，重新生成城市和选项）
+        function loadNewQuestion() {
+            // 重置题目锁定状态
+            hasAnswered = false;
+            isAnswerCorrect = false;
+
+            // 随机抽取新城市
+            const cityInfo = getRandomCityInfo();
+            currentCityName = cityInfo.cityName;
+            currentCorrectProvince = cityInfo.province;
+            currentCityIndex = cityInfo.cityIdx;
+
+            // 生成新选项
+            const newOptions = generateOptions(currentCorrectProvince);
+            renderOptions(newOptions);
+
+            // 更新城市名显示
+            cityNameEl.textContent = currentCityName;
+
+            // 切换显示：显示 messageBox，隐藏 nextBtn（用提示框替换回下一题按钮）
+            messageBoxDiv.classList.remove("hidden");
+            nextBtn.classList.add("hidden");
+
+
+        }
+
+        // 下一题按钮逻辑
+        function nextQuestionHandler() {
+            // 只有在本题已经作答后才允许下一题
+            if (!hasAnswered) return;
+            // 加载新题目
+            loadNewQuestion();
+        }
+
+        // ---------- 事件绑定 ----------
+        function bindEvents() {
+            optionsContainer.addEventListener("click", onOptionClick);
+            nextBtn.addEventListener("click", nextQuestionHandler);
+        }
+
+        // ---------- 初始化游戏 ----------
+        function initGame() {
+            bindEvents();
+            // 随机抽取第一个城市
+            const firstCity = getRandomCityInfo();
+            currentCityName = firstCity.cityName;
+            currentCorrectProvince = firstCity.province;
+            currentCityIndex = firstCity.cityIdx;
+            const initOptions = generateOptions(currentCorrectProvince);
+            renderOptions(initOptions);
+            cityNameEl.textContent = currentCityName;
+            hasAnswered = false;
+            currentRecord = 0;
+            currentScore = 0;
+            updateScoreUI();
+            // 确保界面：显示 messageBox，隐藏 nextBtn
+            messageBoxDiv.classList.remove("hidden");
+            nextBtn.classList.add("hidden");
+        }
+
+        // 启动游戏
+        initGame();
+    </script>
+</body>
+
+</html>
